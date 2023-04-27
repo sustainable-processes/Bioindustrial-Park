@@ -53,13 +53,13 @@ Pumps
 .. autoclass:: biorefineries.cellulosic.units.ReacidifiedHydrolyzatePump
 
 """
-from biosteam.units.design_tools.geometry import cylinder_diameter_from_volume
-from thermosteam import MultiStream
-from biosteam import Unit
-from biosteam.units.decorators import cost
-from biosteam.units.design_tools import size_batch
-import thermosteam as tmo
-import biosteam as bst
+from ....biosteam.units.design_tools.geometry import cylinder_diameter_from_volume
+from ....thermosteam.thermosteam import MultiStream
+from ....biosteam import Unit
+from ....biosteam.units.decorators import cost
+from ....biosteam.units.design_tools import size_batch
+from ....thermosteam import thermosteam as tmo
+from .... import biosteam as bst
 import numpy as np
 
 __all__ = (

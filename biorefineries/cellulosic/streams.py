@@ -4,7 +4,7 @@ Created on Thu Jun 27 23:12:28 2019
 
 @author: yoelr
 """
-from biosteam import stream_kwargs
+from ....biosteam import stream_kwargs
 
 cornstover = stream_kwargs(
     'cornstover',

@@ -19,9 +19,9 @@ Data
 .. autodata:: biorefineries.cellulosic.chemicals.default_ignored
 
 """
-import thermosteam as tmo
-from thermosteam.utils import chemical_cache
-from thermosteam import functional as fn
+from ....thermosteam import thermosteam as tmo 
+from ....thermosteam.thermosteam.utils import chemical_cache
+from ....thermosteam.thermosteam import functional as fn
 import pandas as pd
 
 __all__ = (
@@ -121,7 +121,7 @@ def get_grouped_chemicals(stream, units='kmol/hr'):
 
 @chemical_cache
 def create_cellulosic_ethanol_chemicals():
-    from biorefineries import cane
+    from .. import cane
     chems = tmo.Chemicals([])
     oilcane_chemicals = cane.create_oilcane_chemicals()
     def append_single_phase_chemical(ID, search_ID=None, **data):

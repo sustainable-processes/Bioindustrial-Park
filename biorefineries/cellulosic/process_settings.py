@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 """
-import biosteam as bst
+from .... import biosteam as bst
 
 __all__ = (
     'load_process_settings',

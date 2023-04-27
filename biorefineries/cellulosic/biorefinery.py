@@ -8,12 +8,12 @@
 # for license details.
 """
 """
-import biosteam as bst
+from .... import biosteam as bst
 from .chemicals import create_cellulosic_ethanol_chemicals
 from .process_settings import load_process_settings
 from .systems import create_cellulosic_ethanol_system
-from biorefineries.tea import create_cellulosic_ethanol_tea
-from biosteam import main_flowsheet as F
+from ..tea import create_cellulosic_ethanol_tea
+from ....biosteam import main_flowsheet as F
 
 __all__ = (
     'Biorefinery',
