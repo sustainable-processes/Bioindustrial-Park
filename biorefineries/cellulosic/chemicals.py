@@ -19,9 +19,9 @@ Data
 .. autodata:: biorefineries.cellulosic.chemicals.default_ignored
 
 """
-from ....thermosteam import thermosteam as tmo 
-from ....thermosteam.thermosteam.utils import chemical_cache
-from ....thermosteam.thermosteam import functional as fn
+import thermosteam as tmo 
+from thermosteam.utils import chemical_cache
+from thermosteam import functional as fn
 import pandas as pd
 
 __all__ = (
