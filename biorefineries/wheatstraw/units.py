@@ -23,12 +23,12 @@ import biosteam as bst
 Rxn = tmo.reaction.Reaction
 ParallelRxn = tmo.reaction.ParallelReaction
 
-# %% Add excel unit operations
+# %% Add excel unit operations, commented out
 
-from biosteam.units.factories import xl2mod
-path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '_humbird2011.xlsx')
-xl2mod(path, sys.modules[__name__])
-del sys, xl2mod, os, path
+# from biosteam.units.factories import xl2mod
+# path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '_humbird2011.xlsx')
+# xl2mod(path, sys.modules[__name__])
+# del sys, xl2mod, os, path
 
 # %% Constants
 

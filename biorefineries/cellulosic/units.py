@@ -108,8 +108,25 @@ _gpm2m3hr = 0.227124
 _hp2kW = 0.7457
 _Gcal2kJ = 4184e3
 
-# %% Pretreatment
+def check_and_assign_vle(T=None, P=None, H=None, V=None, ref_stream=None):
+    vars = {'T': T, 'P': P, 'H': H, 'V': V}
+    # Count the number of None values
+    var_count = sum([1 for x in vars.values() if x is not None])
 
+    # Check if more than 2 are None, if so, use all given values
+    if var_count > 2:
+        return T, P, H, V
+
+    # If less than 2 are specified, use inlet stream values as needed
+    elif ref_stream is not None:
+        for name in vars.keys():
+            if vars[name] is None:
+                vars[name] = getattr(ref_stream,name)
+                var_count+=1
+            if var_count==2:
+                break
+        return vars
+# %% Pretreatment
 @cost('Dry flow rate', 'Pretreatment reactor system', units='kg/hr',
       S=83333, CE=522, cost=19812400 * 0.993, n=0.6, kW=4578, BM=1.5)
 class PretreatmentReactorSystem(bst.units.design_tools.PressureVessel, Unit):
@@ -206,8 +223,115 @@ class PretreatmentReactorSystem(bst.units.design_tools.PressureVessel, Unit):
                 Design['Weight'], Design['Diameter'], Design['Length']
             )
         )
-        self._decorated_cost()
+        self._decorated_cost() 
+@cost('Dry flow rate', 'Pretreatment reactor', units='kg/hr',
+      S=83333, CE=522, cost=19812400 * 0.993, n=0.6, kW=4578, BM=1.5)
+@cost('Reactor duty', 'Heat exchangers', CE=522, cost=23900,
+      S=20920000.0, n=0.7, BM=2.2, N='Number of reactors') # Based on a similar heat exchanger
+class PretreatmentReactor(bst.units.design_tools.PressureVessel, Unit):
+    _N_ins = 1
+    _N_outs = 2
+    _graphics = bst.Flash._graphics
+    _units = {'Residence time': 'hr',
+                'Reactor volume': 'm3',
+                'Reactor duty': 'kJ/hr'} 
     
+    def __init__(self, ID='', ins=None, outs=(), T=130+273.15, P=None,V=None,H=None,
+                thermo=None, tau=0.166, V_wf=0.8, length_to_diameter=2, 
+                vessel_material='Stainless steel 316', vessel_type='Horizontal',
+                reactions=None,adiabatic=True,run_vle=True):
+        
+        Unit.__init__(self, ID, ins, outs, thermo)
+        self._load_components()
+        vapor, liquid = self.outs
+        vapor.phase = 'g'
+        chemicals = self.chemicals
+        if reactions is None:
+            self.reactions = ParallelRxn([
+            #            Reaction definition                 Reactant    Conversion
+            Rxn('Glucan + H2O -> Glucose',                   'Glucan',   0.0990, chemicals),
+            Rxn('Glucan + H2O -> GlucoseOligomer',           'Glucan',   0.0030, chemicals),
+            Rxn('Glucan -> HMF + 2 H2O',                     'Glucan',   0.0030, chemicals),
+            Rxn('Galactan + H2O -> GalactoseOligomer',       'Galactan', 0.0240, chemicals),
+            Rxn('Galactan -> HMF + 2 H2O',                   'Galactan', 0.0030, chemicals),
+            Rxn('Mannan + H2O -> MannoseOligomer',           'Mannan',   0.0030, chemicals),
+            Rxn('Mannan -> HMF + 2 H2O',                     'Mannan',   0.0030, chemicals),
+            Rxn('Sucrose -> HMF + Glucose + 2H2O',           'Sucrose',  1.0000, chemicals),
+            Rxn('Xylan + H2O -> Xylose',                     'Xylan',    0.9000, chemicals),
+            Rxn('Xylan + H2O -> XyloseOligomer',             'Xylan',    0.0240, chemicals),
+            Rxn('Xylan -> Furfural + 2 H2O',                 'Xylan',    0.0500, chemicals),
+            Rxn('Arabinan + H2O -> Arabinose',               'Arabinan', 0.9000, chemicals),
+            Rxn('Arabinan + H2O -> ArabinoseOligomer',       'Arabinan', 0.0240, chemicals),
+            Rxn('Arabinan -> Furfural + 2 H2O',              'Arabinan', 0.0050, chemicals),
+            Rxn('Acetate -> AceticAcid',                     'Acetate',  1.0000, chemicals),
+            Rxn('Lignin -> SolubleLignin',                   'Lignin',   0.0500, chemicals)
+            ])
+            self.glucan_to_glucose = self.reactions[0]
+            self.xylan_to_xylose = self.reactions[8]
+            self.glucose_to_byproducts = self.reactions[1:3]
+            self.xylose_to_byproducts = self.reactions[9:12]
+        else:
+            self.reactions = reactions
+        self.tau = tau
+        self.V_wf = V_wf
+        self.length_to_diameter = length_to_diameter
+        self.vessel_material = vessel_material
+        self.vessel_type = vessel_type
+        self.run_vle = run_vle
+        self.adiabatic=adiabatic
+        self.T=T
+        self.P=P
+        self.H=H
+        self.V=V
+
+    def _load_components(self):
+        thermo = self.thermo
+        self._multistream = MultiStream(None, thermo=thermo)
+
+    def _run(self):
+        feed = self.ins[0]
+        vapor, liquid = self.outs
+        liquid.copy_like(feed)
+        if self.run_vle:
+            ms = self._multistream
+            ms.copy_like(liquid)
+            param_dict=check_and_assign_vle(T=self.T,P=self.P,H=self.H,V=self.V,ref_stream=liquid)
+            ms.vle(**param_dict)
+            vapor.mol[:] = ms.imol['g']
+            liquid.mol[:] = ms.imol['l']
+            vapor.T = liquid.T = ms.T
+            vapor.P = liquid.P = ms.P
+        else:
+            liquid.T = self.T
+        if self.adiabatic:
+            self.reactions.adiabatic_reaction(liquid)
+        else:
+            self.reactions(liquid)
+   
+    def _design(self):
+        Design = self.design_results
+        ins_F_vol = self.F_vol_in
+        V_reactor = ins_F_vol * self.tau / self.V_wf
+        P = self.outs[0].P * 0.000145038 # Pa to psi
+        length_to_diameter = self.length_to_diameter
+        D = cylinder_diameter_from_volume(V_reactor, self.length_to_diameter)
+        D *= 3.28084 # convert from m to ft
+        L = D * length_to_diameter
+        Design['Residence time'] = self.tau
+        Design['Reactor volume'] = V_reactor
+        Design.update(self._vessel_design(float(P), float(D), float(L)))
+        Design['Reactor duty']=abs(self.Hnet)
+        Design['Number of reactors']=1
+        self.add_heat_utility(self.Hnet, self.T)
+        self._decorated_design()
+    def _cost(self):
+        Design = self.design_results
+        self.baseline_purchase_costs.update(
+        self._vessel_purchase_cost(
+                Design['Weight'], Design['Diameter'], Design['Length']
+        )
+        )
+        self._decorated_cost()
 
 @cost('Flow rate', 'Pumps',
       S=43149, CE=522, cost=24800, n=0.8, kW=40, BM=2.3)
@@ -311,6 +435,7 @@ class SeedTrain(Unit):
         effluent.T = self.T
         vent.phase = 'g'
         vent.copy_flow(effluent, ('CO2', 'O2'), remove=True)
+
 
     def _design(self): 
         maxvol = self.outs[1].F_vol*self.tau_turnover
@@ -808,7 +933,66 @@ class Nanofilter(bst.Unit):
         assert (permeate.mol >= 0.).all()
         retentate.T = permeate.T = feed.T
 
-
+@cost('Flow rate', 'Sieve filter',
+      cost=14800, CE=551, S=0.2273, n=0.64, BM=1)
+class SieveFilter(bst.Splitter):
+    _units = {'Flow rate': 'm3/hr'}   
+    _N_ins = 1
+    _N_outs= 2
+    
+    def __init__(self, ID='', ins=None, outs=(), *, order=None, WIS=False, split, moisture_content):
+        bst.Splitter.__init__(self, ID, ins, outs, order=order, split=split)
+        #: Moisture content of retentate
+        #If WIS=True, the moisture content is 1-WIS content. Otherwise is 1- totals solid content
+        self.WIS=WIS
+        self.moisture_content = moisture_content
+        assert self.isplit['Water'] == 0, 'cannot define water split, only moisture content'
+    
+    def run_split_with_solids(self,mc):
+        """Splitter mass and energy balance function with mixing all input streams."""
+        top, bot = self.outs
+        feed = self.ins[0]
+        top.copy_like(feed)
+        bot.copy_like(top)
+        top_mass = top.mass
+        F_mass_ins = sum(top_mass*self.split)
+        F_mass_sol = top.F_mass - F_mass_ins
+        F_mass_wat = top.imass['Water']
+        x_sol = mc*F_mass_ins/(F_mass_wat-mc*F_mass_sol)
+        self.split[self.split==0] = x_sol
+        top_mass[:] *= self.split
+        bot.mass[:] -= top_mass
+    
+    def run_split_with_solidsWIS(self,mc):
+        """Splitter mass and energy balance function with mixing all input streams."""
+        top, bot = self.outs
+        feed = self.ins[0]
+        top.copy_like(feed)
+        bot.copy_like(top)
+        top_mass = top.mass
+        WIS=1-mc
+        F_mass_ins = sum(top_mass*self.split)
+        F_mass_tot_out = F_mass_ins/WIS
+        F_mass_sol_out = F_mass_tot_out - F_mass_ins
+        F_mass_sol_in = feed.F_mass - F_mass_ins
+    
+        x_sol = F_mass_sol_out/F_mass_sol_in
+        self.split[self.split==0] = x_sol
+        top_mass[:] *= self.split
+        bot.mass[:] -= top_mass
+        
+    def _run(self):
+        if self.WIS:
+            self.run_split_with_solidsWIS(self.moisture_content)
+        else:
+            self.run_split_with_solids(self.moisture_content)
+        retentate, permeate = self.outs
+        if permeate.imass['Water'] < 0:
+            import warnings
+            warnings.warn(f'not enough water for {repr(self)}')
+            
+    def _design(self):
+        self.design_results['Flow rate'] = self.ins[0].F_vol
 # %% Simple unit operations
 
 @cost('Flow rate', 'Pump', units='kg/hr',
@@ -936,3 +1120,4 @@ class SulfuricAcidStorageTank(Unit): pass
 @cost('Flow rate', 'Pump', S=3720, units='kg/hr',
       CE=522, cost=8000, n=0.8, BM=2.3, kW=1)
 class SulfuricAcidTank(Unit): pass
+
