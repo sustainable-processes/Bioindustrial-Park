@@ -1,17 +1,6 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-# Bioindustrial-Park: BioSTEAM's Premier Biorefinery Models and Results
-# Copyright (C) 2021-, Sarang Bhagwat <sarangb2@illinois.edu>
-#
-# This module is under the UIUC open-source license. See
-# github.com/BioSTEAMDevelopmentGroup/biosteam/blob/master/LICENSE.txt
-# for license details.
-
-This module is a modified implementation of modules from the following:
-[1]	Bhagwat et al., Sustainable Production of Acrylic Acid via 3-Hydroxypropionic Acid from Lignocellulosic Biomass. ACS Sustainable Chem. Eng. 2021, 9 (49), 16659–16669. https://doi.org/10.1021/acssuschemeng.1c05441
-[2]	Li et al., Sustainable Lactic Acid Production from Lignocellulosic Biomass. ACS Sustainable Chem. Eng. 2021, 9 (3), 1341–1351. https://doi.org/10.1021/acssuschemeng.0c08055
-[3]	Cortes-Peña et al., BioSTEAM: A Fast and Flexible Platform for the Design, Simulation, and Techno-Economic Analysis of Biorefineries under Uncertainty. ACS Sustainable Chem. Eng. 2020, 8 (8), 3302–3310. https://doi.org/10.1021/acssuschemeng.9b07040
+Created on Wed Jun  2 12:14:34 2021
 
 @author: sarangbhagwat
 """
@@ -91,8 +80,10 @@ class LCA:
         
         
         self.feedstock_ID = feedstock_ID
-        # self.priced_feeds = [i for i in feeds if i.price]
-        # self.priced_emissions = [i for i in emissions if i.price]
+        self.feeds = feeds = system.feeds
+        self.priced_feeds = [i for i in feeds if i.price]
+        self.emissions = emissions = [i for i in system.products if i not in [main_product]+by_products]
+        self.priced_emissions = [i for i in emissions if i.price]
         
         self.CFs = CFs
         self.demand_allocation_method = demand_allocation_method
@@ -113,7 +104,7 @@ class LCA:
         self.FU_factor = 1. if FU==1. else 1.
         # tmo.settings.set_thermo(chemicals)
         self.LCA_stream = Stream('LCA_stream', units='kg/hr')
-        self.LCA_streams = [i for i in system.feeds if not i==feedstock]
+        self.LCA_streams = system.feeds
         
         self.chem_IDs = [i.ID for i in chemicals]
         
@@ -131,14 +122,6 @@ class LCA:
         
         system._LCA = self
     
-    @property
-    def emissions(self):
-        return [i for i in self.system.products if i not in [self.main_product]+self.by_products]
-    
-    @property
-    def feeds(self): 
-        return self.system.feeds
-        
     @property
     def main_product_kg_per_h(self):
         return self.main_product.imass[self.main_product_chemical_IDs[0]]
@@ -233,10 +216,6 @@ class LCA:
     
     
     @property
-    def BT_excess_steam_kJph_for_excess_electricity(self):
-        return - 3600.* self.net_electricity / self.BT.turbogenerator_efficiency # 3600 to convert kW to kJph
-    
-    @property
     def electricity_demand(self): 
         # return sum([i.power_utility.consumption for i in self.system.units])
         return self.BT.electricity_demand # excludes BT's electricity use
@@ -253,22 +232,19 @@ class LCA:
     @property
     def BT_steam_kJph_turbogen(self): 
         BT = self.BT
-        return 3600.*BT.electricity_demand/BT.turbogenerator_efficiency # 3600 to convert kW to kJph
+        return 3600.*BT.electricity_demand/BT.turbogenerator_efficiency
     
     @property
-    def BT_steam_kJph_total_excluding_excess(self): 
+    def BT_steam_kJph_total(self): 
         return self.BT_steam_kJph_heating + self.BT_steam_kJph_turbogen
     
     @property
-    def BT_steam_kJph_total(self):
-        return self.BT_steam_kJph_total_excluding_excess + self.BT_excess_steam_kJph_for_excess_electricity
-    @property
     def steam_frac_heating(self): 
-        return self.BT_steam_kJph_heating/self.BT_steam_kJph_total_excluding_excess
+        return self.BT_steam_kJph_heating/self.BT_steam_kJph_total
     
     @property
     def steam_frac_turbogen(self): 
-        return  self.BT_steam_kJph_turbogen / self.BT_steam_kJph_total_excluding_excess 
+        return  self.BT_steam_kJph_turbogen / self.BT_steam_kJph_total 
     
     @property
     def steam_frac_cooling(self): 
@@ -277,28 +253,6 @@ class LCA:
     @property
     def steam_frac_electricity_non_cooling(self):
         return  self.steam_frac_turbogen * (1-(self.cooling_electricity_demand / self.electricity_demand))
-    
-    ##
-    @property
-    def actual_steam_frac_heating(self): 
-        return self.BT_steam_kJph_heating/self.BT_steam_kJph_total
-    
-    @property
-    def actual_steam_frac_turbogen(self): 
-        return  self.BT_steam_kJph_turbogen / self.BT_steam_kJph_total 
-    
-    @property
-    def actual_steam_frac_cooling(self): 
-        return  self.actual_steam_frac_turbogen * self.cooling_electricity_demand / self.electricity_demand 
-    
-    @property
-    def actual_steam_frac_electricity_non_cooling(self):
-        return  self.actual_steam_frac_turbogen * (1-(self.cooling_electricity_demand / self.electricity_demand))
-    
-    @property
-    def actual_steam_frac_excess(self): 
-        return  self.BT_excess_steam_kJph_for_excess_electricity / self.BT_steam_kJph_total 
-    ##
     
     @property
     def non_cooling_electricity_demand(self): 
@@ -337,7 +291,7 @@ class LCA:
     
     @property
     def heating_demand_GWP(self): 
-        return self.steam_frac_heating * self.total_steam_GWP 
+        return  self.steam_frac_heating * self.total_steam_GWP 
     
     @property
     def cooling_demand_GWP(self): 

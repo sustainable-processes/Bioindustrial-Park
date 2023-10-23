@@ -1052,15 +1052,15 @@ class FeedStockHandling(Unit): pass
 class PretreatmentFlash(bst.Flash): pass
 
 @cost('Duty', 'Heat exchanger', S=8, units='Gcal/hr',
-      CE=522, cost=85000, n=0.7, BM=2.2, magnitude=True)
+      CE=522, cost=85000, n=0.7, BM=2.2)
 class HydrolysateHeatExchanger(bst.HXutility): pass
 
 @cost('Duty', 'Heat Exchanger', S=8, units='Gcal/hr',
-      CE=551, cost=92000, n=0.7, BM=2.2, magnitude=True)
+      CE=551, cost=92000, n=0.7, BM=2.2)
 class PretreatmentWasteHeater(bst.HXutility): pass
 
 @cost('Duty', 'Heat Exchanger', S=2, units='Gcal/hr',
-      CE=522, cost=34000, n=0.7, BM=2.2, magnitude=True)
+      CE=522, cost=34000, n=0.7, BM=2.2)
 class WasteVaporCondenser(bst.HXutility): pass
 
 @cost('Flow rate', 'Pump', S=402194, units='kg/hr',

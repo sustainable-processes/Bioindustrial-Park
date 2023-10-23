@@ -30,7 +30,6 @@ __all__ = (
 def create_oilcane_to_crude_oil_and_ethanol_1g(
         ins, outs,
         evaporator_and_beer_column_heat_integration=True,
-        WWT_kwargs=None,
     ):
     oilcane, = ins
     ethanol, crude_oil, vinasse = outs
@@ -79,28 +78,16 @@ def create_oilcane_to_crude_oil_and_ethanol_1g(
         area=400,
     )
     crude_oil, thick_vinasse, evaporator_condensate_b = post_fermentation_oil_separation_sys.outs
-    MX1 = bst.Mixer(400, [thick_vinasse, evaporator_condensate_a], vinasse)
-    MX2 = bst.Mixer(700, [bagasse])
+    MX = bst.Mixer(400, [thick_vinasse, evaporator_condensate_a], vinasse)
     
     ### Facilities ###
     
+    s = f.stream
     u = f.unit
-    if WWT_kwargs:
-        outs.remove(vinasse)
-        wastewater_treatment_sys = bst.create_wastewater_treatment_system(
-            area=1000, ins=[MX1-0], mockup=True, **WWT_kwargs
-        )
-        treated_water = wastewater_treatment_sys.get_outlet('RO_treated_water')
-        sludge = wastewater_treatment_sys.get_outlet('sludge')
-        MX2.ins.append(sludge)
-        biogas = wastewater_treatment_sys.get_outlet('biogas')
-    else:
-        treated_water = ''
-        biogas = ''
     
-    
+    # Burn bagasse from conveyor belt
     bst.BoilerTurbogenerator(700,
-        (MX2-0, biogas, 
+        (bagasse, '', 
          'boiler_makeup_water',
          'natural_gas',
          'FGD_lime',
@@ -109,10 +96,22 @@ def create_oilcane_to_crude_oil_and_ethanol_1g(
         turbogenerator_efficiency=0.85
     )
     bst.CoolingTower(800)
+    makeup_water_streams = (s.cooling_tower_makeup_water,
+                            s.boiler_makeup_water)
+    process_water_streams = (s.imbibition_water,
+                             s.rvf_wash_water,
+                             s.stripping_water,
+                             *makeup_water_streams)
+    makeup_water = bst.Stream('makeup_water', price=0.000254)
     MX = bst.Mixer(800, [evaporator_condensate_b, stripper_bottoms_product], 'recycle_process_water')
     bst.ChilledWaterPackage(800)
-    bst.ProcessWaterCenter(800, [treated_water, 'makeup_RO_water', MX-0, 'makeup_water'], 
-                           process_water_price=0.000254)
+    bst.ProcessWaterCenter(800,
+        (MX-0, makeup_water),
+         (),
+         None,
+         makeup_water_streams,
+         process_water_streams
+    )
     HXN = bst.HeatExchangerNetwork(900, 
         ignored=lambda: [u.E301],
         Qmin=1e5,

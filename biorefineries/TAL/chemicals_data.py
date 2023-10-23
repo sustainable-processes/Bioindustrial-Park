@@ -118,6 +118,7 @@ Na2SO4 = chemical_database('Na2SO4', phase='l', Hf=-1356.38e3)
 # Soluble organic salts
 # =============================================================================
 
+Ethanol = chemical_database('Ethanol')
 Acetate = chemical_database('Acetate', phase='l', Hf=-108992*_cal2joule)
 AmmoniumAcetate = chemical_database('AmmoniumAcetate', phase='l', 
                                          Hf=-154701*_cal2joule)
@@ -145,10 +146,8 @@ AmmoniumAcetate = chemical_database('AmmoniumAcetate', phase='l',
 # =============================================================================
 
 AceticAcid = chemical_database('AceticAcid')
-SodiumAcetate = chemical_database('SodiumAcetate')
 Glucose = chemical_database('Glucose', phase = 'l')
 
-CitricAcid = chemical_database('CitricAcid')
 # IBA = chemical_database('Isobutyraldehyde')
 # DPHP = chemical_database('DipotassiumHydrogenPhosphate',
 #                          search_ID='Dipotassium hydrogen phosphate',
@@ -210,8 +209,6 @@ Furfural = chemical_database('Furfural')
 # Acetoin.Tb = 145.4 + 273.15
 
 
-Ethanol = chemical_database('Ethanol')
-Acetone = chemical_database('Acetone')
 Hexanol = chemical_database('Hexanol')
 # Heptane = chemical_database('Heptane')
 
@@ -236,14 +233,13 @@ KSA = Potassiumsorbate = chemical_database(ID='PotassiumSorbate',
 
 TAL = Triaceticacidlactone = chemical_database(ID='TAL',
                                                search_ID='Triacetic acid lactone',
-                                                phase='s',
-                                               )
+                                               phase='s')
 Pyrone = chemical_database(ID='Pyrone',
                            search_ID='2-pyrone',
                            phase='s')
 
 TAL.Hfus = 30883.66976 # Dannenfelser-Yalkowsky method
-TAL.Tm = KSA.Tm = 185. + 273.15 # (experimental) CAS SciFinder 675-10-5
+TAL.Tm = KSA.Tm = 185. + 273.15 # CAS SciFinder 675-10-5
 TAL.Tb = KSA.Tb =  239.1 + 273.15# (predicted) CAS SciFinder 675-10-5
 TAL.Hf = Pyrone.Hf
 TAL.LHV = Pyrone.LHV
@@ -531,8 +527,6 @@ Lignin = chemical_database('Lignin', phase='s')
 # Hf scaled based on vanillin
 Lignin.Hf = -108248*_cal2joule/tmo.Chemical('Vanillin').MW*Lignin.MW
 
-Alanine = chemical_database('Alanine', phase='s')
-
 # =============================================================================
 # Insoluble inorganics
 # =============================================================================
@@ -549,9 +543,6 @@ Tar = chemical_copied('Tar', Xylose, phase_ref='s')
 
 PdC = chemical_database('Pd', phase='s')
 
-NiSiO2 = chemical_database('NiSiO2', search_ID='Nickel on silica', phase='s') # modeled simply as nickel
-
-Amberlyst70_ = chemical_copied('Amberlyst70_', NiSiO2)
 # =============================================================================
 # Mixtures
 # =============================================================================
@@ -601,7 +592,6 @@ chemical_groups = dict(
     SugarOligomers = ('GlucoseOligomer', 'XyloseOligomer', 'GalactoseOligomer',
                       'ArabinoseOligomer', 'MannoseOligomer'),
     OrganicSolubleSolids = ('AmmoniumAcetate', 'SolubleLignin', 'Extract', 'CSL',
-                            'SodiumAcetate',
                             # 'Triacetic acid lactone',
                             'SorbicAcid', 'HMTHP',
                             'PotassiumSorbate', 'ButylSorbate', 'VitaminA', 'VitaminD2'),
