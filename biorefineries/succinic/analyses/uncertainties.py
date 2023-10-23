@@ -1,10 +1,14 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Feb  5 00:40:41 2023
+# Bioindustrial-Park: BioSTEAM's Premier Biorefinery Models and Results
+# Copyright (C) 2021-, Sarang Bhagwat <sarangb2@illinois.edu>
+#
+# This module is under the UIUC open-source license. See
+# github.com/BioSTEAMDevelopmentGroup/biosteam/blob/master/LICENSE.txt
+# for license details.
 
-Modified from the biorefineries constructed in [1], [2], and [3] for the production of
-[1] 3-hydroxypropionic acid, [2] lactic acid, and [3] ethanol from lignocellulosic feedstocks
-
+This module is a modified implementation of modules from the following:
 [1]	Bhagwat et al., Sustainable Production of Acrylic Acid via 3-Hydroxypropionic Acid from Lignocellulosic Biomass. ACS Sustainable Chem. Eng. 2021, 9 (49), 16659–16669. https://doi.org/10.1021/acssuschemeng.1c05441
 [2]	Li et al., Sustainable Lactic Acid Production from Lignocellulosic Biomass. ACS Sustainable Chem. Eng. 2021, 9 (3), 1341–1351. https://doi.org/10.1021/acssuschemeng.0c08055
 [3]	Cortes-Peña et al., BioSTEAM: A Fast and Flexible Platform for the Design, Simulation, and Techno-Economic Analysis of Biorefineries under Uncertainty. ACS Sustainable Chem. Eng. 2020, 8 (8), 3302–3310. https://doi.org/10.1021/acssuschemeng.9b07040
@@ -47,7 +51,7 @@ get_adjusted_MSP = models.get_adjusted_MSP
 
 # %% 
 
-N_simulations_per_mode = 2000 # 2000
+N_simulations_per_mode = 5000 # 2000
 
 percentiles = [0, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 1]
 
@@ -59,14 +63,14 @@ results_dict = {'Baseline':{'MPSP':{}, 'GWP100a':{}, 'FEC':{},
                 'Sensitivity':{'Spearman':{'MPSP':{}, 'GWP100a':{}, 'FEC':{}}},}
 
 modes = [
-            'lab_batch',
-           'lab_fed-batch', 
-           'pilot_batch',
+           #  'lab_batch',
+           # # 'lab_fed-batch', 
+            'pilot_batch',
          ]
 
 parameter_distributions_filenames = [
-                                    'parameter-distributions_lab-scale_batch.xlsx',
-                                    'parameter-distributions_lab-scale_fed-batch.xlsx',
+                                    # 'parameter-distributions_lab-scale_batch.xlsx',
+                                    # 'parameter-distributions_lab-scale_fed-batch.xlsx',
                                     'parameter-distributions_pilot-scale_batch.xlsx',
                                     ]
 
@@ -171,8 +175,15 @@ for i in range(len(modes)):
         '_succinic_%s.%s.%s-%s.%s'%(dateTimeObj.year, dateTimeObj.month, dateTimeObj.day, dateTimeObj.hour, minute)\
         + '_' + str(N_simulations_per_mode) + 'sims'
     
-    baseline = baseline.append(baseline_end, ignore_index=True)
-    baseline.index = ('initial', 'end')
+    # # baseline = baseline.append(baseline_end, ignore_index=True)
+    # baseline_end = pd.DataFrame(baseline_end)
+    # baseline = pd.concat([baseline, baseline_end], 
+    #                       ignore_index=True,
+    #                      )
+    
+    baseline.index = ('initial', 
+                      # 'end',
+                      )
     baseline.to_excel(file_to_save+'_'+mode+'_0_baseline.xlsx')
     
     # Parameters
@@ -181,6 +192,7 @@ for i in range(len(modes)):
     parameter_values = model.table.iloc[:, :index_parameters].copy()
     
     #%%
+    
     # TEA results
     for index_TEA, i in enumerate(models.metrics):
         if i.element == 'LCA': break
